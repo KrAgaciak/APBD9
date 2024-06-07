@@ -19,20 +19,16 @@ public class TripsControllers: ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetTrips()
     {
-        // Implementation of fetching trips without sorting and pagination
         var trips = await _context.Trips.ToListAsync();
         return Ok(trips);
     }
 
-    // New GET method with sorting and pagination
     [HttpGet("trips")]
     public async Task<IActionResult> GetTripsSortedAndPaged(int? page, int pageSize = 10)
     {
-        // Calculate the number of items to skip
         int pageNumber = page ?? 1;
         int skipAmount = (pageNumber - 1) * pageSize;
 
-        // Fetch trips sorted by start date in descending order with pagination
         var trips = await _context.Trips
             .OrderByDescending(t => t.DateFrom)
             .Skip(skipAmount)
@@ -43,36 +39,32 @@ public class TripsControllers: ControllerBase
     }
 
     [HttpPost("{idTrip}/clients")]
-    public async Task<IActionResult> AssignClientToTrip(int idTrip, [FromBody] ClientTripDto clientTripDto)
+    public async Task<IActionResult> AssignClientToTrip(int idTrip, ClientTripDTO clientTripDTO)
     {
-        // Check if the trip exists and is in the future
-        var trip = await _context.Trips.FirstOrDefaultAsync(t => t.IdTrip == idTrips && t.DateFrom > DateTime.Now);
+        var trip = await _context.Trips.FirstOrDefaultAsync(t => t.IdTrip == idTrip && t.DateFrom > DateTime.Now);
         if (trip == null)
         {
             return NotFound("Trip does not exist or has already started.");
         }
 
-        // Check if client by PESEL exists
-        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Pesel == clientTripDto.Pesel);
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Pesel == clientTripDTO.Pesel);
         if (client == null)
         {
             return NotFound("Client does not exist.");
         }
 
-        // Check if this client is already assigned to this trip
         bool isAlreadyAssigned = await _context.ClientTrips.AnyAsync(ct => ct.IdTrip == idTrip && ct.IdClient == client.IdClient);
         if (isAlreadyAssigned)
         {
             return BadRequest("Client is already assigned to this trip.");
         }
 
-        // Register the client to the trip
-        var clientTrip = new ClientTrip
+        var clientTrip = new ClientTrip()
         {
             IdTrip = idTrip,
             IdClient = client.IdClient,
-            RegisteredAt = DateTime.UtcNow, // Assuming RegisteredAt is the registration time
-            PaymentDate = clientTripDto.PaymentDate
+            RegisteredAt = DateTime.UtcNow,
+            PaymentDate = clientTripDTO.PaymentDate
         };
 
         _context.ClientTrips.Add(clientTrip);
