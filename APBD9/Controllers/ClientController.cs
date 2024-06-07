@@ -40,7 +40,5 @@ public class ClientController : ControllerBase
             await _context.SaveChangesAsync();
             return Ok("Client deletet succesfully");
         }
-
-
     }
 }
